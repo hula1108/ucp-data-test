@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 全局样式重置 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  @apply font-sans text-slate-900 bg-slate-50;
+}
+
+/* 添加一个明显的全局样式，用于测试CSS文件是否被正确加载 */
+.test-global-style {
+  @apply border-2 border-dashed border-indigo-500 !important;
+}
