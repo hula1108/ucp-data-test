@@ -62,6 +62,19 @@ return typeColors[testType] || 'bg-slate-100 text-slate-700';
 
 // 数据展示组件
 function DataVisualization({ data }) {
+  // 初始状态 - 显示请选择项目的提示
+  if (!data) {
+    return React.createElement(
+      'div',
+      { className: 'w-full p-8 bg-white rounded-lg shadow-sm border border-slate-100 text-center' },
+      React.createElement(
+        'div',
+        { className: 'flex flex-col items-center justify-center py-10 text-slate-500' },
+        React.createElement('span', { className: 'text-lg font-medium mb-2' }, '请在多维表格选择项目')
+      )
+    );
+  }
+
   // 解析数据
   let testData = [];
   try {
@@ -74,6 +87,19 @@ function DataVisualization({ data }) {
     testData = [];
   }
 
+  // 如果测试数据为空，显示暂无数据提示
+  if (testData.length === 0) {
+    return React.createElement(
+      'div',
+      { className: 'w-full p-8 bg-white rounded-lg shadow-sm border border-slate-100 text-center' },
+      React.createElement(
+        'div',
+        { className: 'flex flex-col items-center justify-center py-10 text-slate-500' },
+        React.createElement('span', { className: 'text-lg font-medium mb-2' }, '暂无数据')
+      )
+    );
+  }
+  
   // 聚合testType数据
   const testTypeStats = testData.reduce((acc, item) => {
     if (!acc[item.testType]) {
@@ -318,13 +344,24 @@ function DataVisualization({ data }) {
 
 // 初始化插件
 async function initPlugin() {
+    // 创建初始容器并显示提示
+    let container = document.getElementById('test-progress-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'test-progress-container';
+      container.className = 'w-full p-4';
+      document.body.appendChild(container);
+    }
+    
+    // 初始渲染 - 显示请选择项目的提示
+    const root = ReactDOM.createRoot(container);
+    root.render(React.createElement(DataVisualization, { data: null }));
+    
     // 获取当前表格实例
     const currentTable = await bitable.base.getActiveTable();
     
     // 仅显示获取成功的提示
-    ui.showMessage('已成功获取表格实例', {
-      type: 'success'
-    });
+    ui.showMessage('已成功获取表格实例', { type: 'success' });
     console.log('已获取表格实例:', currentTable);
     let clickTimeout = null;
 
@@ -350,8 +387,56 @@ async function initPlugin() {
 
 }
 
+// 在文件顶部添加全局变量来存储React根实例
+let reactRoot = null;
+
 async function processCellClick(selection) {
+  let loadingMessage = null; // 初始化loadingMessage变量
   try {
+    // 确保有容器元素
+    let container = document.getElementById('test-progress-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'test-progress-container';
+      container.className = 'w-full p-4';
+      document.body.appendChild(container);
+    }
+    
+    // 创建或获取React根实例
+    if (!reactRoot) {
+      reactRoot = ReactDOM.createRoot(container);
+    }
+    
+    // 先显示加载中状态在容器内
+    reactRoot.render(
+      React.createElement(
+        'div',
+        { className: 'w-full p-8 bg-white rounded-lg shadow-sm border border-slate-100 text-center' },
+        React.createElement(
+          'div',
+          { className: 'flex flex-col items-center justify-center py-10 text-slate-500' },
+          React.createElement('svg', { className: 'animate-spin -ml-1 mr-2 h-5 w-5 text-blue-500', xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24' },
+            React.createElement('circle', { className: 'opacity-25', cx: '12', cy: '12', r: '10', stroke: 'currentColor', strokeWidth: '4' }),
+            React.createElement('path', { className: 'opacity-75', fill: 'currentColor', d: 'M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z' })
+          ),
+          React.createElement('span', { className: 'text-lg font-medium' }, '正在加载数据...')
+        )
+      )
+    );
+    
+    // 同时显示顶部的loading消息
+    try {
+      loadingMessage = ui.showMessage('正在处理数据...', {
+        type: 'loading',
+        duration: 0 // 0表示不自动关闭
+      });
+    } catch (e) {
+      console.warn('显示loading消息失败:', e);
+    }
+    
+    // 模拟一点延迟，确保用户能看到loading状态
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
     const table = await bitable.base.getTableById(selection.tableId);
     const recordId = selection.recordId;
     
@@ -384,13 +469,76 @@ async function processCellClick(selection) {
       progressStrData,
       tableId: selection.tableId
     });
+    
+    // 数据处理完成，关闭顶部loading消息
+    if (loadingMessage && typeof loadingMessage.close === 'function') {
+      loadingMessage.close();
+    }
   } catch (error) {
+    // 发生错误时也关闭loading状态
     console.error('处理记录数据失败:', error);
     ui.showMessage('处理记录数据失败: ' + error.message, { type: 'error' });
+    
+    // 确保有容器并显示错误信息
+    let container = document.getElementById('test-progress-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'test-progress-container';
+      container.className = 'w-full p-4';
+      document.body.appendChild(container);
+    }
+    
+    // 创建或获取React根实例
+    if (!reactRoot) {
+      reactRoot = ReactDOM.createRoot(container);
+    }
+    
+    reactRoot.render(
+      React.createElement(
+        'div',
+        { className: 'w-full p-8 bg-white rounded-lg shadow-sm border border-slate-100 text-center' },
+        React.createElement(
+          'div',
+          { className: 'flex flex-col items-center justify-center py-10 text-rose-500' },
+          React.createElement('span', { className: 'text-lg font-medium mb-2' }, '处理数据失败')
+        )
+      )
+    );
+    
+    // 关闭可能存在的loading消息
+    if (loadingMessage && typeof loadingMessage.close === 'function') {
+      loadingMessage.close();
+    }
+    
+    // 额外确保关闭所有可能的loading消息
+    try {
+      const messages = ui.getMessages();
+      messages.forEach(msg => {
+        if (msg.type === 'loading' && typeof msg.close === 'function') {
+          msg.close();
+        }
+      });
+    } catch (e) {
+      console.warn('清理loading消息失败:', e);
+    }
   }
 }
 
 function onCellClick(cellInfo) {
+  // 确保有容器元素
+  let container = document.getElementById('test-progress-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'test-progress-container';
+    container.className = 'w-full p-4';
+    document.body.appendChild(container);
+  }
+
+  // 创建或获取React根实例
+  if (!reactRoot) {
+    reactRoot = ReactDOM.createRoot(container);
+  }
+
   if (cellInfo.progressStrData) {
     // 确保数据是字符串格式
     let progressText = cellInfo.progressStrData;
@@ -409,21 +557,24 @@ function onCellClick(cellInfo) {
     
     console.log('业务处理: 测试进度str数据', progressText);
     
-    // 修改：直接渲染DataVisualization组件到页面中，不再创建模态框容器
-    let container = document.getElementById('test-progress-container');
-    if (!container) {
-      container = document.createElement('div');
-      container.id = 'test-progress-container';
-      container.className = 'w-full p-4';
-      document.body.appendChild(container);
-    }
-    
     // 渲染React组件
-    const root = ReactDOM.createRoot(container);
-    root.render(React.createElement(DataVisualization, { data: progressText }));
+    reactRoot.render(React.createElement(DataVisualization, { data: progressText }));
   } else {
+    // 在测试进度str为空的情况下，清掉之前的页面数据，显示暂无数据的提示
     console.warn('没有有效的测试进度str数据');
     ui.showMessage('没有有效的测试进度数据', { type: 'warning' });
+    
+    reactRoot.render(
+      React.createElement(
+        'div',
+        { className: 'w-full p-8 bg-white rounded-lg shadow-sm border border-slate-100 text-center' },
+        React.createElement(
+          'div',
+          { className: 'flex flex-col items-center justify-center py-10 text-slate-500' },
+          React.createElement('span', { className: 'text-lg font-medium mb-2' }, '暂无数据')
+        )
+      )
+    );
   }
 }
 
