@@ -144,7 +144,7 @@ function DataVisualization({ data }) {
   const sortedTestData = [...testData].sort(sortByTestType);
 
   // 饼图颜色 - 使用低饱和度马卡龙色系
-  const colors = ['#1d4ed8', '#80D7B6', '#FFE680', '#FF99AF', '#9B9CC9', '#FF99AF', '#80A7D8'];
+  const colors = ['#1d4fd8ca', '#80D7B6', '#FFE680', '#FF99AF', '#9B9CC9', '#FF99AF', '#80A7D8'];
 
   // 创建表格头部 - 使用TailwindCSS优化表头样式
   const tableHeader = React.createElement(
@@ -774,7 +774,7 @@ function onCellClick(cellInfo) {
         React.createElement(
           'div',
           { className: 'mb-8 bg-white rounded-lg shadow-sm border border-slate-100 p-4' },
-          React.createElement('h3', { className: 'text-base font-medium text-slate-700' }, 'Bug优先级分布'),
+          React.createElement('h3', { className: 'text-base font-medium text-slate-700 mb-2' }, 'Bug优先级分布'),
           React.createElement(
             'div',
             { className: 'overflow-x-auto' },
@@ -814,20 +814,20 @@ function onCellClick(cellInfo) {
                       key: `priority-row-${index}`,
                       className: `hover:bg-indigo-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`
                     },
-                    React.createElement('td', { className: 'border-r border-slate-200 px-4 py-2 text-sm font-medium text-slate-700' }, priority),
+                    React.createElement('td', { className: 'border-r border-slate-200 px-4 py-2 text-xs font-medium text-slate-700' }, priority),
                     statusArray.map((status, statusIndex) => 
                       React.createElement(
                         'td',
                         { 
                           key: `status-${statusIndex}`,
-                          className: 'border-r border-slate-200 px-4 py-2 text-sm text-right text-slate-700'
+                          className: 'border-r border-slate-200 px-4 py-2 text-xs text-right text-slate-700'
                         },
                         statuses[status] || 0
                       )
                     ),
                     React.createElement(
                       'td', 
-                      { className: 'px-4 py-2 text-sm text-right font-medium text-slate-700 bg-slate-50' },
+                      { className: 'px-4 py-2 text-xs text-right font-medium text-slate-700 bg-slate-50' },
                       priorityTotals[priority]
                     )
                   )
@@ -836,18 +836,18 @@ function onCellClick(cellInfo) {
                 React.createElement(
                   'tr',
                   { className: 'bg-slate-100 font-medium' },
-                  React.createElement('td', { className: 'border-r border-slate-200 px-4 py-2 text-sm text-slate-700' }, '总计'),
+                  React.createElement('td', { className: 'border-r border-slate-200 px-4 py-2 text-xs text-slate-700' }, '总计'),
                   statusArray.map((status, index) => 
                     React.createElement(
                       'td',
                       { 
                         key: `total-status-${index}`,
-                        className: 'border-r border-slate-200 px-4 py-2 text-sm text-right text-slate-700'
+                        className: 'border-r border-slate-200 px-4 py-2 text-xs text-right text-slate-700'
                       },
                       statusTotals[status]
                     )
                   ),
-                  React.createElement('td', { className: 'px-4 py-2 text-sm text-right text-slate-700 bg-slate-200' }, grandTotal)
+                  React.createElement('td', { className: 'px-4 py-2 text-xs text-right text-slate-700 bg-slate-200' }, grandTotal)
                 )
               )
             )
