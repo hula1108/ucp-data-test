@@ -104,9 +104,10 @@ if (!ui.showMessage) {
     messageDiv.style.top = '20px';
     messageDiv.style.right = '20px';
     messageDiv.style.padding = '10px 15px';
-    messageDiv.style.background = type === 'error' ? '#ffebee' : type === 'warning' ? '#fff3e0' : '#e3f2fd';
-    messageDiv.style.color = type === 'error' ? '#c62828' : type === 'warning' ? '#e65100' : '#1565c0';
-    messageDiv.style.border = '1px solid ' + (type === 'error' ? '#ef9a9a' : type === 'warning' ? '#ffcc80' : '#90caf9');
+    // 使用低饱和度马卡龙色系
+    messageDiv.style.background = type === 'error' ? '#FFE0E4' : type === 'warning' ? '#FFF6CC' : '#CCDAF0';
+    messageDiv.style.color = type === 'error' ? '#FF809D' : type === 'warning' ? '#FFE066' : '#6696D0';
+    messageDiv.style.border = '1px solid ' + (type === 'error' ? '#FFCCD3' : type === 'warning' ? '#FFF1B3' : '#B3C9E8');
     messageDiv.style.borderRadius = '4px';
     messageDiv.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
     messageDiv.style.zIndex = '1000';
