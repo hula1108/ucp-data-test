@@ -972,14 +972,14 @@ function onCellClick(cellInfo) {
               borderColor: 'transparent',
               borderWidth: 0
             },
-            label: {
-              show: true,
-              position: 'top',
-              formatter: '{c}',
-              color: '#9797C3',
-              fontWeight: 'bold',
-              fontSize: 12
-            },
+            label: {show: true,
+                position: 'top',
+                offset: [0, -5], // 使用像素单位确保标签在柱子上方固定位置显示
+                formatter: '{c}',
+                color: '#7259afff', // 使用更明显的颜色
+                fontWeight: 'bold',
+                fontSize: 12
+              },
             tooltip: {
               show: false
             }
