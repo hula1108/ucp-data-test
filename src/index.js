@@ -856,8 +856,8 @@ function onCellClick(cellInfo) {
         // DevLeader堆叠柱状图 - 使用ECharts实现
         React.createElement(
           'div',
-          { className: 'bg-white rounded-lg shadow-sm border border-slate-100 p-4' },
-          React.createElement('h3', { className: 'text-base font-medium text-slate-700 mb-4' }, '开发负责人Bug分布'),
+          { className: 'bg-white rounded-lg shadow-sm border border-slate-100 p-4 mb-6' },
+          React.createElement('h3', { className: 'text-base font-medium text-slate-700 mb-4' }, '开发负责人Bug类型分布'),
           React.createElement(
             'div',
             { className: 'h-[400px]' },
@@ -874,6 +874,30 @@ function onCellClick(cellInfo) {
                 'div',
                 { className: 'flex items-center justify-center h-full text-slate-400' },
                 '暂无开发负责人数据'
+              )
+            )
+          )
+        ),
+        // 新增：开发负责人Bug优先级分布堆叠柱状图
+        React.createElement(
+          'div',
+          { className: 'bg-white rounded-lg shadow-sm border border-slate-100 p-4' },
+          React.createElement('h3', { className: 'text-base font-medium text-slate-700 mb-4' }, '开发负责人Bug优先级分布'),
+          React.createElement(
+            'div',
+            { className: 'h-[400px]' },
+            parsedData.devLeaderPriority && Object.keys(parsedData.devLeaderPriority).length > 0 ? (
+              React.createElement(
+                DevLeaderPriorityChart,
+                { 
+                  devLeaderPriorityData: parsedData.devLeaderPriority
+                }
+              )
+            ) : (
+              React.createElement(
+                'div',
+                { className: 'flex items-center justify-center h-full text-slate-400' },
+                '暂无开发负责人优先级数据'
               )
             )
           )
@@ -1088,6 +1112,231 @@ function onCellClick(cellInfo) {
           chartInstance.current.setOption(option);
         }
       }, [leaderEntries, bugTypes]);
+      
+      return React.createElement('div', { ref: chartRef, className: 'w-full h-full' });
+    }
+    
+    // 开发负责人Bug优先级分布图表组件
+    function DevLeaderPriorityChart({ devLeaderPriorityData }) {
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+      
+      useEffect(() => {
+        // 初始化ECharts实例
+        if (chartRef.current && !chartInstance.current) {
+          chartInstance.current = echarts.init(chartRef.current);
+          
+          // 窗口大小改变时，重新调整图表大小
+          const handleResize = () => {
+            if (chartInstance.current) {
+              chartInstance.current.resize();
+            }
+          };
+          window.addEventListener('resize', handleResize);
+          
+          // 清理函数
+          return () => {
+            window.removeEventListener('resize', handleResize);
+            if (chartInstance.current) {
+              chartInstance.current.dispose();
+              chartInstance.current = null;
+            }
+          };
+        }
+      }, []);
+      
+      useEffect(() => {
+        if (chartInstance.current) {
+          // 按优先级排序：P0 > P1 > P2 > P3 > ...
+          const priorityOrder = (a, b) => {
+            const numA = parseInt(a.match(/P(\d+)/)?.[1] || 999);
+            const numB = parseInt(b.match(/P(\d+)/)?.[1] || 999);
+            return numA - numB;
+          };
+          
+          // 准备数据
+          // 提取所有开发负责人并按总bug数倒序排序
+          const leaderNames = Object.keys(devLeaderPriorityData)
+            .sort((leaderA, leaderB) => {
+              // 计算每个开发负责人的总bug数
+              const totalA = Object.values(devLeaderPriorityData[leaderA])
+                .reduce((sum, count) => sum + (parseInt(count) || 0), 0);
+              const totalB = Object.values(devLeaderPriorityData[leaderB])
+                .reduce((sum, count) => sum + (parseInt(count) || 0), 0);
+              // 倒序排列
+              return totalB - totalA;
+            });
+          
+          // 提取所有优先级
+          const priorities = Array.from(new Set(
+            leaderNames.flatMap(leader => Object.keys(devLeaderPriorityData[leader]))
+          )).sort(priorityOrder);
+          
+          // 使用低饱和度马卡龙色系表示不同优先级
+          const priorityColors = [
+            '#ff535b47', // P0 - 红色调
+            '#ffc480ff', // P1 - 橙色调
+            '#80D7B6',   // P2 - 绿色调
+            '#a2aaefff', // P3 - 蓝色调
+            'rgba(176, 137, 224, 0.5)', // 其他优先级
+          ];
+          
+          // 准备系列数据
+          const series = priorities.map((priority, index) => {
+            return {
+              name: priority,
+              type: 'bar',
+              stack: 'total',
+              emphasis: {
+                focus: 'series'
+              },
+              data: leaderNames.map(leader => {
+                return parseInt(devLeaderPriorityData[leader][priority]) || 0;
+              }),
+              itemStyle: {
+                color: priorityColors[index % priorityColors.length]
+              },
+              label: {
+                show: false,
+                position: 'top',
+                formatter: '{c}'
+              }
+            };
+          });
+          
+          // 添加总计标签
+          const totalSeries = {
+            name: '总计',
+            type: 'bar',
+            stack: 'total',
+            emphasis: {
+              focus: 'series'
+            },
+            data: leaderNames.map(leader => {
+              return Object.values(devLeaderPriorityData[leader]).reduce((sum, count) => sum + (parseInt(count) || 0), 0);
+            }),
+            itemStyle: {
+              color: 'transparent',
+              borderColor: 'transparent',
+              borderWidth: 0
+            },
+            label: {
+              show: true,
+              position: 'top',
+              offset: [0, -5], // 使用像素单位确保标签在柱子上方固定位置显示
+              formatter: '{c}',
+              color: '#7259afff', // 使用更明显的颜色
+              fontWeight: 'bold',
+              fontSize: 12
+            },
+            tooltip: {
+              show: false
+            }
+          };
+          
+          series.push(totalSeries);
+          
+          // 配置项
+          const option = {
+            tooltip: {
+              trigger: 'axis',
+              axisPointer: {
+                type: 'shadow'
+              },
+              formatter: function(params) {
+                const result = [`${params[0].name}`];
+                let total = 0;
+                
+                // 计算总计
+                params.forEach(param => {
+                  if (param.seriesName !== '总计') {
+                    total += param.value;
+                  }
+                });
+                
+                // 添加总计信息
+                result.push(`总计: ${total}个`);
+                
+                // 添加各优先级信息
+                params.forEach(param => {
+                  if (param.seriesName !== '总计' && param.value > 0) {
+                    result.push(`${param.marker} ${param.seriesName}: ${param.value}个`);
+                  }
+                });
+                
+                return result.join('<br/>');
+              }
+            },
+            legend: {
+              data: priorities, // 使用排序后的优先级
+              top: 0,
+              textStyle: {
+                fontSize: 12,
+                color: '#9797C3'
+              },
+              itemWidth: 12,
+              itemHeight: 12,
+              itemGap: 15,
+              type: 'scroll',
+              pageButtonItemGap: 5,
+              pageButtonGap: 10,
+              pageIconColor: '#DADAE5',
+              pageIconInactiveColor: '#C4C4CF',
+              pageIconSize: 12
+            },
+            grid: {
+              left: '3%',
+              right: '4%',
+              bottom: '3%',
+              top: '15%',
+              containLabel: true
+            },
+            xAxis: {
+              type: 'category',
+              data: leaderNames,
+              axisLabel: {
+                color: '#9797C3',
+                fontSize: 12,
+                interval: 0,
+                rotate: leaderNames.length > 5 ? 30 : 0
+              },
+              axisTick: {
+                show: false
+              },
+              axisLine: {
+                lineStyle: {
+                  color: '#E7E7ED'
+                }
+              }
+            },
+            yAxis: {
+              type: 'value',
+              axisLabel: {
+                color: '#9797C3',
+                fontSize: 12,
+                formatter: '{value}'
+              },
+              axisTick: {
+                show: false
+              },
+              axisLine: {
+                show: false
+              },
+              splitLine: {
+                lineStyle: {
+                  color: '#F3F3F7',
+                  type: 'dashed'
+                }
+              }
+            },
+            series: series,
+            animationDuration: 1000,
+            animationEasing: 'cubicOut'
+          };
+          
+          chartInstance.current.setOption(option);
+        }
+      }, [devLeaderPriorityData]);
       
       return React.createElement('div', { ref: chartRef, className: 'w-full h-full' });
     }
